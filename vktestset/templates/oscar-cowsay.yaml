@@ -68,12 +68,30 @@ spec:
   volumes:
   - configMap:
       defaultMode: 420
-      name: cowsay-interlink
+      name: oscar-cowsay-cm-{{ uuid }}
     name: oscar-config
   - emptyDir: {}
     name: shared-data
   
   tolerations: {{ tolerations | tojson }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oscar-cowsay-cm-{{ uuid }}
+  namespace: {{ namespace }}
+data:
+  script.sh: |
+    #!/bin/sh
+
+    if [ "$INPUT_TYPE" = "json" ]
+    then
+        jq '.message' "$INPUT_FILE_PATH" -r | /usr/games/cowsay
+    else
+        cat "$INPUT_FILE_PATH" | /usr/games/cowsay
+    fi
+
 
 ################################################################################
 # VALIDATION
@@ -94,3 +112,8 @@ clean_configs:
     name: oscar-cowsay-{{ uuid }}
     namespace: {{ namespace }}
     condition: onSuccess
+
+  - type: config_map
+    name: oscar-cowsay-cm-{{ uuid }}
+    namespace: {{ namespace }}
+    condition: always
